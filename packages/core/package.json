@@ -1,0 +1,27 @@
+{
+  "name": "@zk-sudoku/core",
+  "version": "0.1.0",
+  "description": "ZK-SNARK for Sudoku core functionality",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "wasm-pack build --target web ./rust && tsc",
+    "build:rust": "wasm-pack build --target web ./rust",
+    "dev": "tsc -w",
+    "lint": "eslint src/**/*.ts",
+    "clean": "rm -rf dist"
+  },
+  "files": [
+    "dist",
+    "rust/pkg"
+  ],
+  "devDependencies": {
+    "@types/node": "^20.5.9",
+    "eslint": "^8.48.0",
+    "typescript": "^5.2.2",
+    "wasm-pack": "^0.12.1"
+  },
+  "dependencies": {
+    "base64-js": "^1.5.1"
+  }
+}

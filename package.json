@@ -1,0 +1,24 @@
+{
+  "name": "zk-sudoku-monorepo",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "format": "prettier --write \"**/*.{ts,tsx,md}\""
+  },
+  "devDependencies": {
+    "eslint": "^8.48.0",
+    "prettier": "^3.0.3",
+    "turbo": "latest"
+  },
+  "packageManager": "yarn@1.22.19",
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
