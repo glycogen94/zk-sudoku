@@ -20,6 +20,7 @@ ark-bls12-381 = { version = "0.4.0", default-features = false, features = ["curv
 ark-groth16 = { version = "0.4.0", default-features = false }
 ark-relations = { version = "0.4.0", default-features = false }
 ark-serialize = { version = "0.4.0", default-features = false, features = ["derive"] }
+ark-crypto-primitives = { version = "0.4.0", default-features = false, features = ["snark"] }
 rand = { version = "0.8", features = ["getrandom"] }
 getrandom = { version = "0.2", features = ["js"] }
 serde = { version = "1.0", features = ["derive"] }

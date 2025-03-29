@@ -1,30 +1,46 @@
 #!/bin/bash
 
 # 코어 패키지 빌드 스크립트
+set -e  # 오류 발생 시 스크립트 중단
 
-echo "ZK-Games 코어 패키지 빌드 시작..."
+echo "ZK-Sudoku 코어 패키지 빌드 시작..."
+
+# Rust 환경 확인
+echo "Rust 환경 확인 중..."
+rustc --version
+cargo --version
+wasm-pack --version
 
 # Rust WASM 빌드
 echo "Rust 코드를 WebAssembly로 컴파일 중..."
 cd rust
-wasm-pack build --target web
+wasm-pack build --target web --out-name zk_sudoku_core --release
 cd ..
 
-# TypeScript 빌드
-echo "TypeScript 코드 컴파일 중..."
-# WASM 모듈을 src 디렉토리로 복사
-mkdir -p src/generated
-cp -r rust/pkg/* src/generated/
-# WASM 모듈 이름 변경 (zk_sudoku_core로 통일)
-mv src/generated/zk_sudoku_core_bg.wasm src/generated/zk_sudoku_core.wasm
-mv src/generated/zk_sudoku_core.js src/generated/zk_sudoku_core.js
+# 빌드 결과 확인
+echo "WASM 빌드 결과 확인..."
+ls -la rust/pkg/
 
-# TypeScript 컴파일
-npx tsc
+# 디렉토리 생성
+echo "디렉토리 준비 중..."
+mkdir -p dist/pkg
+cp -r rust/pkg/* dist/pkg/
 
-# 빌드 결과 디렉토리 생성 및 파일 복사
-mkdir -p dist
-cp -r src/generated/*.wasm dist/
-cp -r src/generated/*.js dist/
+# TypeScript 파일 컴파일
+echo "TypeScript 파일 컴파일 중..."
+tsc
 
-echo "ZK-Games 코어 패키지 빌드 완료!"
+# 웹 앱의 public 디렉토리에 wasm 파일 와 JS 파일 복사
+echo "Next.js public 디렉토리로 wasm 파일 복사 중..."
+mkdir -p ../../apps/web/public
+
+# wasm 파일 복사
+cp rust/pkg/zk_sudoku_core_bg.wasm ../../apps/web/public/
+
+# 필요하다면 JS 파일도 복사
+cp rust/pkg/zk_sudoku_core.js ../../apps/web/public/
+cp rust/pkg/zk_sudoku_core_bg.js ../../apps/web/public/
+
+echo "WASM 관련 파일들을 public 디렉토리로 복사 완료"
+
+echo "ZK-Sudoku 코어 패키지 빌드 완료!"

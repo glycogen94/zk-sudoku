@@ -2,15 +2,15 @@
   "compilerOptions": {
     "target": "es2020",
     "module": "esnext",
+    "lib": ["esnext", "dom"],
     "moduleResolution": "node",
-    "declaration": true,
     "esModuleInterop": true,
     "strict": true,
+    "declaration": true,
     "outDir": "dist",
-    "lib": ["es2020", "dom"],
     "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true
+    "isolatedModules": true
   },
-  "include": ["src/**/*"],
+  "include": ["src/**/*.ts"],
   "exclude": ["node_modules", "dist"]
 }

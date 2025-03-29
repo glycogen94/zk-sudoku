@@ -4,19 +4,18 @@ mod utils;
 
 use wasm_bindgen::prelude::*;
 use circuit::SudokuCircuit;
-use sudoku::{convert_flat_to_grid, solve_backtrack, is_safe, is_valid_sudoku};
+use sudoku::{convert_flat_to_grid, solve_backtrack, is_valid_sudoku};
 use utils::set_panic_hook;
 
 use ark_bls12_381::Bls12_381;
 use ark_groth16::{
-    create_random_proof, generate_random_parameters, prepare_verifying_key, verify_proof, Proof,
+    Groth16, ProvingKey, Proof,
 };
+use ark_crypto_primitives::snark::SNARK;
 use ark_std::rand::rngs::StdRng;
-use ark_std::rand::SeedableRng;
-use ark_std::One;
+use ark_std::rand::{SeedableRng, RngCore};
 use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
 use std::cell::RefCell;
-use ark_ff::Field;
 use ark_bls12_381::Fr;
 use js_sys::Uint8Array;
 
@@ -35,11 +34,11 @@ pub fn setup() -> Result<String, JsValue> {
     let rng = &mut StdRng::seed_from_u64(0);
     let circuit = sample_circuit();
     
-    let params = generate_random_parameters::<Bls12_381, _, _>(circuit, rng)
+    let params = Groth16::<Bls12_381>::circuit_specific_setup(circuit, rng)
         .map_err(|e| JsValue::from_str(&format!("Setup error: {:?}", e)))?;
         
     let mut params_bytes = Vec::new();
-    params.serialize(&mut params_bytes)
+    params.serialize_compressed(&mut params_bytes)
         .map_err(|e| JsValue::from_str(&format!("Serialization error: {:?}", e)))?;
     
     PARAMS.with(|p| {
@@ -79,15 +78,16 @@ pub fn prove(puzzle_data: &[u8], solution_data: &[u8]) -> Result<String, JsValue
     let params_bytes = PARAMS.with(|p| p.borrow().clone())
         .ok_or_else(|| JsValue::from_str("Parameters not initialized. Call setup() first."))?;
     
-    let params = ark_groth16::Parameters::<Bls12_381>::deserialize(&params_bytes[..])
+    let params = ProvingKey::<Bls12_381>::deserialize_compressed(&params_bytes[..])
         .map_err(|e| JsValue::from_str(&format!("Deserialization error: {:?}", e)))?;
     
     let rng = &mut StdRng::seed_from_u64(1);
-    let proof = create_random_proof(circuit, &params, rng)
+    
+    let proof = Groth16::<Bls12_381>::prove(&params, circuit, rng)
         .map_err(|e| JsValue::from_str(&format!("Proving error: {:?}", e)))?;
     
     let mut proof_bytes = Vec::new();
-    proof.serialize(&mut proof_bytes)
+    proof.serialize_compressed(&mut proof_bytes)
         .map_err(|e| JsValue::from_str(&format!("Serialization error: {:?}", e)))?;
     
     Ok(base64::encode(&proof_bytes))
@@ -99,16 +99,15 @@ pub fn verify(puzzle_data: &[u8], proof_str: &str) -> Result<bool, JsValue> {
     let params_bytes = PARAMS.with(|p| p.borrow().clone())
         .ok_or_else(|| JsValue::from_str("Parameters not initialized. Call setup() first."))?;
     
-    let params = ark_groth16::Parameters::<Bls12_381>::deserialize(&params_bytes[..])
+    let pk = ProvingKey::<Bls12_381>::deserialize_compressed(&params_bytes[..])
         .map_err(|e| JsValue::from_str(&format!("Deserialization error: {:?}", e)))?;
     
     let proof_bytes = base64::decode(proof_str)
         .map_err(|e| JsValue::from_str(&format!("Base64 decode error: {:?}", e)))?;
     
-    let proof = Proof::<Bls12_381>::deserialize(&proof_bytes[..])
+    let proof = Proof::<Bls12_381>::deserialize_compressed(&proof_bytes[..])
         .map_err(|e| JsValue::from_str(&format!("Proof deserialization error: {:?}", e)))?;
     
-    let pvk = prepare_verifying_key(&params.vk);
     let puzzle = convert_flat_to_grid(puzzle_data);
     
     // 퍼즐을 이용하여 공개 입력 생성
@@ -121,7 +120,7 @@ pub fn verify(puzzle_data: &[u8], proof_str: &str) -> Result<bool, JsValue> {
         }
     }
     
-    let result = verify_proof(&pvk, &proof, &public_inputs)
+    let result = Groth16::<Bls12_381>::verify(&pk.vk, &public_inputs, &proof)
         .map_err(|e| JsValue::from_str(&format!("Verification error: {:?}", e)))?;
     
     Ok(result)

@@ -1,7 +1,18 @@
-import * as WasmModule from './wasm-wrapper';
-export * from './wasm-wrapper';
+// WASM 래퍼 모듈에서 모든 함수를 가져옵니다.
+import {
+  initWasm,
+  setupParams,
+  generateProof,
+  verifyProof,
+  solveSudoku,
+  validateSudoku,
+  generateSudoku,
+  isWasmInitialized as isWasmReady
+} from './wasm-wrapper';
 
-// 스도쿠 유틸리티 함수들
+/**
+ * 유틸리티 함수들
+ */
 export const SudokuUtils = {
   /**
    * 스도쿠 그리드를 문자열로 변환합니다.
@@ -43,33 +54,6 @@ export const SudokuUtils = {
   },
 
   /**
-   * 스도쿠 그리드를 JSON 문자열로 변환합니다.
-   * @param grid 9x9 스도쿠 그리드 (0은 빈 셀, 1-9는 채워진 셀)
-   * @returns JSON 문자열
-   */
-  gridToJson(grid: number[]): string {
-    return JSON.stringify(grid);
-  },
-
-  /**
-   * JSON 문자열을 스도쿠 그리드로 변환합니다.
-   * @param json JSON 문자열
-   * @returns 9x9 스도쿠 그리드 (0은 빈 셀, 1-9는 채워진 셀)
-   */
-  jsonToGrid(json: string): number[] {
-    try {
-      const parsed = JSON.parse(json);
-      if (Array.isArray(parsed) && parsed.length === 81) {
-        return parsed.map(val => (typeof val === 'number' && val >= 0 && val <= 9) ? val : 0);
-      }
-      throw new Error('유효한 스도쿠 그리드 JSON이 아닙니다.');
-    } catch (error) {
-      console.error('JSON 파싱 오류:', error);
-      return new Array(81).fill(0);
-    }
-  },
-
-  /**
    * 빈 스도쿠 그리드를 생성합니다.
    * @returns 0으로 채워진 81칸의 배열
    */
@@ -78,8 +62,7 @@ export const SudokuUtils = {
   },
 
   /**
-   * 스도쿠 그리드가 규칙을 만족하는지 확인합니다.
-   * 참고: 이 함수는 기본적인 검사만 수행하며, 완전한 검증은 WebAssembly 모듈의 validateSudoku 함수를 사용하세요.
+   * 스도쿠 그리드가 규칙을 만족하는지 확인합니다. (클라이언트 사이드)
    * @param grid 스도쿠 그리드
    * @returns 유효성 여부 (boolean)
    */
@@ -125,11 +108,64 @@ export const SudokuUtils = {
     }
 
     return true;
+  },
+
+  /**
+   * JSON 문자열을 스도쿠 그리드로 변환합니다.
+   * @param jsonStr 스도쿠 그리드를 표현하는 JSON 문자열
+   * @returns 9x9 스도쿠 그리드 (0은 빈 셀, 1-9는 채워진 셀)
+   */
+  jsonToGrid(jsonStr: string): number[] {
+    try {
+      const parsed = JSON.parse(jsonStr);
+      if (Array.isArray(parsed)) {
+        // 1차원 배열인 경우
+        if (parsed.length === 81 && parsed.every(num => typeof num === 'number')) {
+          return parsed;
+        }
+        // 2차원 배열인 경우
+        else if (parsed.length === 9 && parsed.every(row => Array.isArray(row) && row.length === 9)) {
+          const flatGrid = [];
+          for (const row of parsed) {
+            for (const cell of row) {
+              flatGrid.push(typeof cell === 'number' ? cell : 0);
+            }
+          }
+          return flatGrid;
+        }
+      }
+      
+      // 유효한 형식이 아닌 경우 빈 그리드 반환
+      console.error('유효하지 않은 JSON 형식입니다.');
+      return this.createEmptyGrid();
+    } catch (error) {
+      console.error('JSON 파싱 중 오류 발생:', error);
+      return this.createEmptyGrid();
+    }
   }
 };
 
-// 모든 기능을 기본 내보내기로 묶기
+// 사용하기 쉽도록 모든 함수를 내보냅니다.
+export {
+  initWasm,
+  setupParams,
+  generateProof,
+  verifyProof,
+  solveSudoku,
+  validateSudoku,
+  generateSudoku,
+  isWasmReady
+};
+
+// 편의성을 위한 기본 내보내기
 export default {
-  ...WasmModule,
+  initWasm,
+  setupParams,
+  generateProof,
+  verifyProof,
+  solveSudoku,
+  validateSudoku,
+  generateSudoku,
+  isWasmReady,
   SudokuUtils
 };

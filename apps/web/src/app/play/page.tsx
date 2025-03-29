@@ -1,13 +1,20 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import SudokuGrid from '@/components/sudoku/SudokuGrid';
 import { formatTime } from '@/lib/utils';
 import { useGameStore } from '@/store';
+import { useWasmContext } from '@/providers/wasm-provider';
 
 export default function PlayPage() {
+  const { isLoaded, isLoading: wasmLoading, error: wasmError, reload } = useWasmContext();
+  
+  // 로컬 상태 관리
+  const [solution, setSolution] = useState<number[] | null>(null);
+  const [showingSolution, setShowingSolution] = useState(false);
+  
   const { 
     grid, 
     originalGrid, 
@@ -37,6 +44,107 @@ export default function PlayPage() {
     return () => clearInterval(interval);
   }, [status, incrementTimer]);
 
+  // 디버깅용 로그 - 매번 렌더링할 때마다 상태 출력
+  useEffect(() => {
+    console.log("Current grid:", grid);
+    console.log("Solution:", solution);
+    console.log("Showing solution:", showingSolution);
+    console.log("Grid length:", grid?.length);
+    console.log("Status:", status);
+  }, [grid, solution, showingSolution, status]);
+
+  // WASM 로딩 중이라면 로딩 화면 표시
+  if (wasmLoading) {
+    return (
+      <div className="container mx-auto py-6 px-4">
+        <Card>
+          <CardHeader>
+            <CardTitle>스도쿠 게임</CardTitle>
+            <CardDescription>게임 모듈을 로드하는 중입니다...</CardDescription>
+          </CardHeader>
+          <CardContent className="flex justify-center items-center py-20">
+            <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+            <span className="ml-3">로딩 중...</span>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // WASM 로드 에러가 있다면 에러 화면 표시
+  if (wasmError) {
+    return (
+      <div className="container mx-auto py-6 px-4">
+        <Card>
+          <CardHeader>
+            <CardTitle>오류 발생</CardTitle>
+            <CardDescription>게임을 로드하는 중 문제가 발생했습니다.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-md">
+              <p className="font-medium">게임 모듈을 로드하지 못했습니다</p>
+              <p className="mt-2">{wasmError.message}</p>
+              <Button onClick={reload} className="mt-4">다시 시도</Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // 커스텀 솔루션 보기 핸들러
+  const handleShowSolution = async () => {
+    try {
+      setMessage('솔루션 계산 중...');
+      
+      // 솔루션 계산
+      const solutionData = await solveGame();
+      
+      if (solutionData) {
+        console.log("Got solution data:", solutionData);
+        console.log("Solution length:", solutionData.length);
+        
+        // 솔루션 데이터 저장
+        setSolution([...solutionData]);
+        
+        // 솔루션 표시 모드 활성화
+        setShowingSolution(true);
+        
+        // 메시지 표시
+        setMessage('솔루션이 표시되었습니다. 이제 정답을 확인할 수 있습니다.');
+      } else {
+        setMessage('이 퍼즐에 대한 해결책을 찾을 수 없습니다.');
+      }
+    } catch (error) {
+      console.error('솔루션 계산 중 오류 발생:', error);
+      setMessage('솔루션 계산 중 오류가 발생했습니다.');
+    }
+  };
+
+  // 리셋 핸들러
+  const handleReset = () => {
+    // 솔루션 상태 초기화
+    if (showingSolution) {
+      setShowingSolution(false);
+      setSolution(null);
+    }
+    resetGame();
+  };
+
+  // 새 게임 핸들러
+  const handleNewGame = () => {
+    // 솔루션 관련 상태 초기화
+    setShowingSolution(false);
+    setSolution(null);
+    useGameStore.setState({ 
+      status: 'idle',
+      message: null
+    });
+  };
+
+  // 현재 표시할 그리드 결정
+  const displayGrid = showingSolution && solution ? solution : grid;
+
   return (
     <div className="container mx-auto py-6 px-4">
       <Card>
@@ -54,6 +162,21 @@ export default function PlayPage() {
                 <Button onClick={() => startNewGame(3)} size="lg" className="w-full">어려움</Button>
               </div>
             </div>
+          ) : status === 'loading' ? (
+            <div className="flex justify-center items-center py-20">
+              <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+              <span className="ml-3">스도쿠 생성 중...</span>
+            </div>
+          ) : status === 'error' ? (
+            <div className="mx-auto max-w-lg">
+              <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-md mb-4">
+                <p className="font-medium">오류가 발생했습니다</p>
+                <p className="mt-2">{message}</p>
+              </div>
+              <Button onClick={() => useGameStore.setState({ status: 'idle', message: null })} className="w-full">
+                다시 시도
+              </Button>
+            </div>
           ) : (
             <div className="max-w-2xl mx-auto">
               <div className="flex justify-between items-center mb-4">
@@ -65,18 +188,25 @@ export default function PlayPage() {
                 </div>
               </div>
               
-              <SudokuGrid 
-                grid={grid} 
-                onChange={updateCell} 
-                originalGrid={originalGrid}
-                readOnly={status === 'complete'}
-              />
+              {/* 솔루션이나 현재 게임 상태에 따라 그리드 표시 */}
+              {displayGrid && displayGrid.length === 81 ? (
+                <SudokuGrid 
+                  grid={displayGrid} 
+                  onChange={updateCell} 
+                  originalGrid={originalGrid}
+                  readOnly={status === 'complete' || showingSolution} 
+                />
+              ) : (
+                <div className="text-red-500 text-center my-4">
+                  스도쿠 그리드 생성 중 오류가 발생했습니다.
+                </div>
+              )}
               
               <div className="flex flex-wrap gap-2 mt-6 justify-center">
-                <Button onClick={resetGame} variant="outline">리셋</Button>
+                <Button onClick={handleReset} variant="outline">리셋</Button>
                 <Button onClick={() => checkSolution()}>확인</Button>
-                <Button onClick={() => solveGame()} variant="secondary">솔루션 보기</Button>
-                <Button onClick={() => useGameStore.setState({ status: 'idle' })} variant="ghost">새 게임</Button>
+                <Button onClick={handleShowSolution} variant="secondary">솔루션 보기</Button>
+                <Button onClick={handleNewGame} variant="ghost">새 게임</Button>
               </div>
               
               {message && (

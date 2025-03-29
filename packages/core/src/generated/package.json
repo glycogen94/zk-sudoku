@@ -1,0 +1,19 @@
+{
+  "name": "zk-sudoku-core",
+  "type": "module",
+  "collaborators": [
+    "zkrypto1"
+  ],
+  "description": "A Sudoku ZK-SNARK library",
+  "version": "0.1.0",
+  "files": [
+    "zk_sudoku_core_bg.wasm",
+    "zk_sudoku_core.js",
+    "zk_sudoku_core.d.ts"
+  ],
+  "main": "zk_sudoku_core.js",
+  "types": "zk_sudoku_core.d.ts",
+  "sideEffects": [
+    "./snippets/*"
+  ]
+}

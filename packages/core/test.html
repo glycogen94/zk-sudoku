@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ZK-Sudoku 모듈 테스트</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      line-height: 1.6;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    h1 {
+      color: #333;
+      border-bottom: 1px solid #ddd;
+      padding-bottom: 10px;
+    }
+    button {
+      background-color: #4CAF50;
+      border: none;
+      color: white;
+      padding: 10px 20px;
+      text-align: center;
+      text-decoration: none;
+      display: inline-block;
+      font-size: 16px;
+      margin: 10px 2px;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+    #results {
+      background-color: #f9f9f9;
+      border: 1px solid #ddd;
+      padding: 15px;
+      margin-top: 20px;
+      border-radius: 4px;
+      white-space: pre-wrap;
+    }
+    .status {
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+    .success {
+      color: green;
+    }
+    .error {
+      color: red;
+    }
+  </style>
+</head>
+<body>
+  <h1>ZK-Sudoku 모듈 테스트</h1>
+  
+  <p>이 페이지는 ZK-Sudoku 웹어셈블리 모듈이 올바르게 작동하는지 테스트합니다.</p>
+  
+  <div>
+    <button id="testInit">WASM 모듈 초기화</button>
+    <button id="testGenerate">스도쿠 생성</button>
+    <button id="testSolve">스도쿠 풀기</button>
+  </div>
+  
+  <div id="results">테스트 결과가 여기에 표시됩니다...</div>
+
+  <script type="module">
+    // WASM 모듈 import
+    import { initWasm, generateSudoku, solveSudoku, validateSudoku } from './dist/wasm-wrapper.js';
+    
+    const resultsDiv = document.getElementById('results');
+    
+    // 로그 출력 함수
+    function log(message, isError = false) {
+      const item = document.createElement('div');
+      item.textContent = message;
+      item.className = isError ? 'error' : 'success';
+      resultsDiv.appendChild(item);
+    }
+    
+    // WASM 모듈 초기화 테스트
+    document.getElementById('testInit').addEventListener('click', async () => {
+      resultsDiv.innerHTML = '<div class="status">WASM 모듈 초기화 중...</div>';
+      
+      try {
+        const wasmModule = await initWasm('./dist/zk_sudoku_core.wasm');
+        if (wasmModule) {
+          log('✅ WASM 모듈 초기화 성공!');
+        } else {
+          log('❌ WASM 모듈 초기화 실패!', true);
+        }
+      } catch (error) {
+        log(`❌ 오류: ${error.message}`, true);
+        console.error(error);
+      }
+    });
+    
+    // 스도쿠 생성 테스트
+    document.getElementById('testGenerate').addEventListener('click', async () => {
+      resultsDiv.innerHTML = '<div class="status">스도쿠 생성 중...</div>';
+      
+      try {
+        const puzzle = await generateSudoku(1); // 난이도 쉬움
+        
+        if (puzzle && puzzle.length === 81) {
+          // 9x9 그리드로 변환하여 표시
+          const grid = [];
+          for (let i = 0; i < 9; i++) {
+            grid.push(puzzle.slice(i * 9, (i + 1) * 9));
+          }
+          
+          log('✅ 스도쿠 생성 성공!');
+          log(JSON.stringify(grid, null, 2));
+          
+          // 유효성 검사
+          const isValid = await validateSudoku(puzzle, false);
+          log(`스도쿠 유효성: ${isValid ? '유효함' : '유효하지 않음'}`);
+        } else {
+          log('❌ 스도쿠 생성 실패!', true);
+        }
+      } catch (error) {
+        log(`❌ 오류: ${error.message}`, true);
+        console.error(error);
+      }
+    });
+    
+    // 스도쿠 풀기 테스트
+    document.getElementById('testSolve').addEventListener('click', async () => {
+      resultsDiv.innerHTML = '<div class="status">스도쿠 풀이 중...</div>';
+      
+      try {
+        // 테스트용 스도쿠 퍼즐 (0은 빈 셀)
+        const puzzle = [
+          5, 3, 0, 0, 7, 0, 0, 0, 0,
+          6, 0, 0, 1, 9, 5, 0, 0, 0,
+          0, 9, 8, 0, 0, 0, 0, 6, 0,
+          8, 0, 0, 0, 6, 0, 0, 0, 3,
+          4, 0, 0, 8, 0, 3, 0, 0, 1,
+          7, 0, 0, 0, 2, 0, 0, 0, 6,
+          0, 6, 0, 0, 0, 0, 2, 8, 0,
+          0, 0, 0, 4, 1, 9, 0, 0, 5,
+          0, 0, 0, 0, 8, 0, 0, 7, 9
+        ];
+        
+        // 스도쿠 풀이
+        const solution = await solveSudoku(puzzle);
+        
+        if (solution && solution.length === 81) {
+          // 9x9 그리드로 변환하여 표시
+          const grid = [];
+          for (let i = 0; i < 9; i++) {
+            grid.push(solution.slice(i * 9, (i + 1) * 9));
+          }
+          
+          log('✅ 스도쿠 풀이 성공!');
+          log(JSON.stringify(grid, null, 2));
+          
+          // 유효성 검사
+          const isValid = await validateSudoku(solution, true);
+          log(`스도쿠 유효성: ${isValid ? '유효함' : '유효하지 않음'}`);
+        } else {
+          log('❌ 스도쿠 풀이 실패!', true);
+        }
+      } catch (error) {
+        log(`❌ 오류: ${error.message}`, true);
+        console.error(error);
+      }
+    });
+  </script>
+</body>
+</html>

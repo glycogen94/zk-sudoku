@@ -11,31 +11,48 @@ export interface ZkSudokuWasm {
   memory: WebAssembly.Memory;
 }
 
-/**
- * WebAssembly 모듈 초기화 함수
- */
-type WasmInit = (input?: RequestInfo | URL | Response | BufferSource | WebAssembly.Module) => Promise<ZkSudokuWasm>;
-
-/**
- * 현재 로드된 WebAssembly 모듈 인스턴스
- */
-let wasmModule: ZkSudokuWasm | null = null;
+// WASM 모듈 초기화 상태
+let wasmModule: any = null;
 
 /**
  * ZK-Sudoku WASM 모듈을 초기화합니다.
  * @param wasmPath WebAssembly 파일 경로 (선택적)
  */
-export async function initWasm(wasmPath?: string): Promise<ZkSudokuWasm> {
+export async function initWasm(wasmPath?: string): Promise<any> {
   if (wasmModule) return wasmModule;
 
   try {
-    // 기본 경로 또는 사용자 지정 경로의 WASM 모듈 로드
-    const path = wasmPath || './zk_sudoku_core_bg.wasm';
+    console.log('WASM 모듈 초기화 시작...');
     
-    // WASM 모듈 동적 임포트
-    const { default: init } = await import(/* webpackIgnore: true */ './zk_sudoku_core.js') as { default: WasmInit };
-    wasmModule = await init(path);
+    // 브라우저 환경
+    if (typeof window !== 'undefined') {
+      // 동적 임포트를 사용하여 WASM 모듈 가져오기
+      try {
+        const wasm = await import('../rust/pkg/zk_sudoku_core');
+        console.log('WASM 모듈 임포트 성공!');
+        
+        // 경로가 제공된 경우 해당 경로로 초기화, 아니면 기본 값 사용
+        wasmModule = await wasm.default();
+        console.log('WASM 기본값으로 초기화 성공!');
+      } catch (error) {
+        console.error('WASM 초기화 실패:', error);
+        throw error;
+      }
+    } 
+    // Node.js 환경 (필요한 경우)
+    else {
+      const wasm = require('../rust/pkg/zk_sudoku_core');
+      const fs = require('fs');
+      const path = require('path');
+      
+      // 경로가 제공된 경우 해당 경로 사용, 아니면 기본 경로 사용
+      const wasmPath2 = wasmPath || path.resolve(__dirname, '../rust/pkg/zk_sudoku_core_bg.wasm');
+      const wasmBinary = fs.readFileSync(wasmPath2);
+      
+      wasmModule = await wasm.default(wasmBinary);
+    }
     
+    console.log('WASM 모듈 초기화 완료');
     return wasmModule;
   } catch (error) {
     console.error('ZK-Sudoku WASM 초기화 중 오류 발생:', error);
