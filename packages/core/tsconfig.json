@@ -4,12 +4,16 @@
     "module": "esnext",
     "lib": ["esnext", "dom"],
     "moduleResolution": "node",
+    "allowSyntheticDefaultImports": true,
+    "resolveJsonModule": true,
+    "allowJs": true,
     "esModuleInterop": true,
     "strict": true,
     "declaration": true,
     "outDir": "dist",
     "skipLibCheck": true,
-    "isolatedModules": true
+    "isolatedModules": true,
+    "noImplicitAny": false
   },
   "include": ["src/**/*.ts"],
   "exclude": ["node_modules", "dist"]

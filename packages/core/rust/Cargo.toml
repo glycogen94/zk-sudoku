@@ -8,6 +8,10 @@ description = "A Sudoku ZK-SNARK library"
 [lib]
 crate-type = ["cdylib", "rlib"]
 
+[[bin]]
+name = "generate_crs"
+path = "src/generate_crs.rs"
+
 [dependencies]
 wasm-bindgen = "0.2.84"
 js-sys = "0.3.61"
@@ -28,10 +32,16 @@ serde_json = "1.0"
 wasm-bindgen-futures = "0.4"
 base64 = "0.13"
 
+[dev-dependencies]
+wasm-bindgen-test = "0.3"
+
 [profile.release]
 opt-level = 3
 lto = true
 codegen-units = 1
 
+[profile.test]
+opt-level = 3 # 테스트 시에도 릴리스 수준 최적화 적용
+
 [package.metadata.wasm-pack.profile.release]
-wasm-opt = ["-O4", "--enable-mutable-globals"]
+wasm-opt = false

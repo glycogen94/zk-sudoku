@@ -87,13 +87,37 @@ export function start() {
     wasm.start();
 }
 
+function passArray8ToWasm0(arg, malloc) {
+    const ptr = malloc(arg.length * 1, 1) >>> 0;
+    getUint8ArrayMemory0().set(arg, ptr / 1);
+    WASM_VECTOR_LEN = arg.length;
+    return ptr;
+}
+
 function takeFromExternrefTable0(idx) {
     const value = wasm.__wbindgen_export_3.get(idx);
     wasm.__externref_table_dealloc(idx);
     return value;
 }
 /**
- * ZK-SNARK 파라미터 설정
+ * JavaScript에서 호출하여 사전 생성된 CRS 파일을 설정하는 함수
+ * @param {Uint8Array} pk_bytes
+ * @param {Uint8Array} vk_bytes
+ */
+export function init_keys(pk_bytes, vk_bytes) {
+    const ptr0 = passArray8ToWasm0(pk_bytes, wasm.__wbindgen_malloc);
+    const len0 = WASM_VECTOR_LEN;
+    const ptr1 = passArray8ToWasm0(vk_bytes, wasm.__wbindgen_malloc);
+    const len1 = WASM_VECTOR_LEN;
+    const ret = wasm.init_keys(ptr0, len0, ptr1, len1);
+    if (ret[1]) {
+        throw takeFromExternrefTable0(ret[0]);
+    }
+}
+
+/**
+ * ZK-SNARK 파라미터 설정 (DEPRECATED: 대신 init_keys 사용)
+ * 이전 버전과의 호환성을 위해 유지됨
  * @returns {string}
  */
 export function setup() {
@@ -115,12 +139,6 @@ export function setup() {
     }
 }
 
-function passArray8ToWasm0(arg, malloc) {
-    const ptr = malloc(arg.length * 1, 1) >>> 0;
-    getUint8ArrayMemory0().set(arg, ptr / 1);
-    WASM_VECTOR_LEN = arg.length;
-    return ptr;
-}
 /**
  * 증명 생성
  * @param {Uint8Array} puzzle_data
@@ -177,10 +195,7 @@ export function solve_sudoku(grid_data) {
     const ptr0 = passArray8ToWasm0(grid_data, wasm.__wbindgen_malloc);
     const len0 = WASM_VECTOR_LEN;
     const ret = wasm.solve_sudoku(ptr0, len0);
-    if (ret[2]) {
-        throw takeFromExternrefTable0(ret[1]);
-    }
-    return takeFromExternrefTable0(ret[0]);
+    return ret;
 }
 
 /**
@@ -204,6 +219,18 @@ export function validate_sudoku(grid_data, check_complete) {
 export function generate_sudoku(difficulty) {
     const ret = wasm.generate_sudoku(difficulty);
     return ret;
+}
+
+/**
+ * 스도쿠 퍼즐의 솔루션 여부 확인
+ * @param {Uint8Array} grid_data
+ * @returns {boolean}
+ */
+export function has_solution(grid_data) {
+    const ptr0 = passArray8ToWasm0(grid_data, wasm.__wbindgen_malloc);
+    const len0 = WASM_VECTOR_LEN;
+    const ret = wasm.has_solution(ptr0, len0);
+    return ret !== 0;
 }
 
 async function __wbg_load(module, imports) {
@@ -244,6 +271,9 @@ function __wbg_get_imports() {
         const ret = arg0.buffer;
         return ret;
     };
+    imports.wbg.__wbg_error_524f506f44df1645 = function(arg0) {
+        console.error(arg0);
+    };
     imports.wbg.__wbg_error_7534b8e9a36f1ab4 = function(arg0, arg1) {
         let deferred0_0;
         let deferred0_1;
@@ -258,6 +288,9 @@ function __wbg_get_imports() {
     imports.wbg.__wbg_length_a446193dc22c12f8 = function(arg0) {
         const ret = arg0.length;
         return ret;
+    };
+    imports.wbg.__wbg_log_c222819a41e063d3 = function(arg0) {
+        console.log(arg0);
     };
     imports.wbg.__wbg_new_8a6f238a6ece86ea = function() {
         const ret = new Error();

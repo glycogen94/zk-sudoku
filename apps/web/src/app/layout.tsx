@@ -37,7 +37,7 @@ export default function RootLayout({
                       </li>
                       <li>
                         <Button variant="ghost" asChild className="text-sm sm:text-base">
-                          <Link href="/play">게임</Link>
+                          <Link href="/sudoku">게임</Link>
                         </Button>
                       </li>
                       <li>

@@ -95,13 +95,37 @@ export function start() {
     wasm.start();
 }
 
+function passArray8ToWasm0(arg, malloc) {
+    const ptr = malloc(arg.length * 1, 1) >>> 0;
+    getUint8ArrayMemory0().set(arg, ptr / 1);
+    WASM_VECTOR_LEN = arg.length;
+    return ptr;
+}
+
 function takeFromExternrefTable0(idx) {
     const value = wasm.__wbindgen_export_3.get(idx);
     wasm.__externref_table_dealloc(idx);
     return value;
 }
 /**
- * ZK-SNARK 파라미터 설정
+ * JavaScript에서 호출하여 사전 생성된 CRS 파일을 설정하는 함수
+ * @param {Uint8Array} pk_bytes
+ * @param {Uint8Array} vk_bytes
+ */
+export function init_keys(pk_bytes, vk_bytes) {
+    const ptr0 = passArray8ToWasm0(pk_bytes, wasm.__wbindgen_malloc);
+    const len0 = WASM_VECTOR_LEN;
+    const ptr1 = passArray8ToWasm0(vk_bytes, wasm.__wbindgen_malloc);
+    const len1 = WASM_VECTOR_LEN;
+    const ret = wasm.init_keys(ptr0, len0, ptr1, len1);
+    if (ret[1]) {
+        throw takeFromExternrefTable0(ret[0]);
+    }
+}
+
+/**
+ * ZK-SNARK 파라미터 설정 (DEPRECATED: 대신 init_keys 사용)
+ * 이전 버전과의 호환성을 위해 유지됨
  * @returns {string}
  */
 export function setup() {
@@ -123,12 +147,6 @@ export function setup() {
     }
 }
 
-function passArray8ToWasm0(arg, malloc) {
-    const ptr = malloc(arg.length * 1, 1) >>> 0;
-    getUint8ArrayMemory0().set(arg, ptr / 1);
-    WASM_VECTOR_LEN = arg.length;
-    return ptr;
-}
 /**
  * 증명 생성
  * @param {Uint8Array} puzzle_data
@@ -234,6 +252,10 @@ export function __wbg_error_7534b8e9a36f1ab4(arg0, arg1) {
 export function __wbg_length_a446193dc22c12f8(arg0) {
     const ret = arg0.length;
     return ret;
+};
+
+export function __wbg_log_c222819a41e063d3(arg0) {
+    console.log(arg0);
 };
 
 export function __wbg_new_8a6f238a6ece86ea() {

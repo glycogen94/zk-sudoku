@@ -13,7 +13,7 @@ export default function HomePage() {
         </p>
         <div className="flex flex-wrap justify-center gap-4">
           <Button asChild className="gap-2">
-            <Link href="/play">
+            <Link href="/sudoku">
               <FaPlay /> 게임 시작
             </Link>
           </Button>
@@ -38,7 +38,7 @@ export default function HomePage() {
           </CardHeader>
           <CardFooter>
             <Button asChild variant="link" className="w-full">
-              <Link href="/play">
+              <Link href="/sudoku">
                 게임 시작하기 →
               </Link>
             </Button>

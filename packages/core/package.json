@@ -1,26 +1,27 @@
 {
-  "name": "@zk-sudoku/core",
-  "version": "0.1.0",
-  "description": "ZK-SNARK for Sudoku core functionality",
-  "main": "dist/index.js",
-  "module": "dist/index.js",
-  "types": "dist/index.d.ts",
-  "sideEffects": false,
-  "scripts": {
-    "build": "./build.sh",
-    "build:rust": "cd rust && wasm-pack build --target bundler --release",
-    "build:ts": "tsc",
-    "dev": "tsc -w",
-    "lint": "eslint src/**/*.ts",
-    "clean": "rm -rf dist"
-  },
-  "files": [
-    "dist"
-  ],
-  "devDependencies": {
-    "@types/node": "^20.5.9",
-    "eslint": "^8.48.0",
-    "typescript": "^5.2.2",
-    "wasm-pack": "^0.12.1"
-  }
+    "name": "@zk-sudoku/core",
+    "version": "0.1.0",
+    "type": "module",
+    "description": "ZK-SNARK for Sudoku core functionality",
+    "main": "dist/index.js",
+    "module": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "sideEffects": false,
+    "scripts": {
+        "build:ts": "tsc",
+        "build:rust": "cd rust && wasm-pack build --target web --out-name zk_sudoku_core --out-dir ../dist/wasm --release",
+        "build:crs": "cd rust && cargo build --bin generate_crs --release && mkdir -p ../crs_temp && ./target/release/generate_crs ../crs_temp",
+        "copy:public": "mkdir -p ../../apps/web/public && cp ./dist/wasm/zk_sudoku_core_bg.wasm ../../apps/web/public/ && cp ./dist/wasm/zk_sudoku_core.js ../../apps/web/public/ && cp ./crs_temp/* ../../apps/web/public/ && rm -rf ./crs_temp",
+        "build": "rm -rf dist crs_temp && yarn build:rust && yarn build:ts && yarn build:crs && yarn copy:public",
+        "clean": "rm -rf dist rust/pkg rust/target crs_temp"
+    },
+    "files": [
+        "dist"
+    ],
+    "devDependencies": {
+        "@types/node": "^20.5.9",
+        "eslint": "^8.48.0",
+        "typescript": "^5.2.2",
+        "wasm-pack": "^0.12.1"
+    }
 }

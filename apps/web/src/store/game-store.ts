@@ -135,22 +135,46 @@ export const useGameStore = create<GameState>()(
         set({ message: '솔루션 계산 중...', status: 'loading' });
         
         try {
+          // solveSudoku는 null을 반환할 수 있음
           const solution = await solveSudoku(originalGrid);
-          if (solution) {
-            // 상태를 변경하여 솔루션 메시지를 표시하고 그리드를 업데이트
-            set({ 
-              grid: solution, 
-              status: 'playing',
-              message: '솔루션이 표시되었습니다. 이제 정답을 확인할 수 있습니다.' 
-            });
-            return solution;
-          } else {
+          
+          // 솔루션 확인
+          if (!solution) {
+            console.error('솔루션이 null입니다');
             set({ 
               message: '이 퍼즐에 대한 해결책을 찾을 수 없습니다.',
               status: 'playing'
             });
             return null;
           }
+          
+          // 배열 확인
+          if (!Array.isArray(solution)) {
+            console.error('솔루션이 배열이 아닙니다:', typeof solution);
+            set({ 
+              message: '솔루션을 받아올 수 없습니다.',
+              status: 'playing'
+            });
+            return null;
+          }
+          
+          // 길이 확인
+          if (solution.length !== 81) {
+            console.error('솔루션 길이가 올바르지 않습니다:', solution.length);
+            set({ 
+              message: '솔루션 형식이 올바르지 않습니다.',
+              status: 'playing'
+            });
+            return null;
+          }
+          
+          // 상태를 변경하여 솔루션 메시지를 표시하고 그리드를 업데이트
+          set({ 
+            status: 'playing',
+            message: '솔루션이 표시되었습니다. 이제 정답을 확인할 수 있습니다.' 
+          });
+          
+          return solution;
         } catch (error) {
           console.error('스도쿠 해결 중 오류 발생:', error);
           set({ 

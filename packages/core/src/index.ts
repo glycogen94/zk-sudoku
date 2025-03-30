@@ -1,19 +1,23 @@
 // WASM 래퍼 모듈에서 모든 함수를 가져옵니다.
 import {
-  initWasm,
-  setupParams,
-  generateProof,
-  verifyProof,
-  solveSudoku,
-  validateSudoku,
-  generateSudoku,
-  isWasmInitialized as isWasmReady
-} from './wasm-wrapper';
-
+    initWasm as wasmInitWasm, // 이름 충돌 방지를 위해 alias 사용 가능
+    generateProof as wasmGenerateProof,
+    verifyProof as wasmVerifyProof,
+    solveSudoku as wasmSolveSudoku,
+    validateSudoku as wasmValidateSudoku,
+    generateSudoku as wasmGenerateSudoku,
+    hasSolution as wasmHasSolution, // 추가 (필요시)
+    isWasmReady as wasmIsWasmReady,
+    SudokuUtils as WasmSudokuUtils // SudokuUtils는 아래에서 재정의하므로 alias 사용
+  } from './wasm-wrapper';
+  
 /**
  * 유틸리티 함수들
  */
 export const SudokuUtils = {
+  // wasm-wrapper의 SudokuUtils 함수들 임포트
+  ...WasmSudokuUtils,
+  
   /**
    * 스도쿠 그리드를 문자열로 변환합니다.
    * @param grid 9x9 스도쿠 그리드 (0은 빈 셀, 1-9는 채워진 셀)
@@ -125,8 +129,8 @@ export const SudokuUtils = {
         }
         // 2차원 배열인 경우
         else if (parsed.length === 9 && parsed.every(row => Array.isArray(row) && row.length === 9)) {
-          const flatGrid = [];
-          for (const row of parsed) {
+          const flatGrid: number[] = [];
+          for (const row of parsed as any[][]) {
             for (const cell of row) {
               flatGrid.push(typeof cell === 'number' ? cell : 0);
             }
@@ -146,26 +150,22 @@ export const SudokuUtils = {
 };
 
 // 사용하기 쉽도록 모든 함수를 내보냅니다.
-export {
-  initWasm,
-  setupParams,
-  generateProof,
-  verifyProof,
-  solveSudoku,
-  validateSudoku,
-  generateSudoku,
-  isWasmReady
-};
+export const initWasm = wasmInitWasm;
+export const generateProof = wasmGenerateProof;
+export const verifyProof = wasmVerifyProof;
+export const solveSudoku = wasmSolveSudoku;
+export const validateSudoku = wasmValidateSudoku;
+export const generateSudoku = wasmGenerateSudoku;
+export const hasSolution = wasmHasSolution; // 필요하다면 추가
+export const isWasmReady = wasmIsWasmReady;
 
 // 편의성을 위한 기본 내보내기
 export default {
   initWasm,
-  setupParams,
   generateProof,
   verifyProof,
   solveSudoku,
   validateSudoku,
   generateSudoku,
   isWasmReady,
-  SudokuUtils
 };

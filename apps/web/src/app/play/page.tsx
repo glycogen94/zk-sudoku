@@ -100,7 +100,7 @@ export default function PlayPage() {
       // 솔루션 계산
       const solutionData = await solveGame();
       
-      if (solutionData) {
+      if (solutionData && Array.isArray(solutionData) && solutionData.length === 81) {
         console.log("Got solution data:", solutionData);
         console.log("Solution length:", solutionData.length);
         
@@ -113,6 +113,7 @@ export default function PlayPage() {
         // 메시지 표시
         setMessage('솔루션이 표시되었습니다. 이제 정답을 확인할 수 있습니다.');
       } else {
+        console.error("솔루션을 구할 수 없습니다:", solutionData);
         setMessage('이 퍼즐에 대한 해결책을 찾을 수 없습니다.');
       }
     } catch (error) {

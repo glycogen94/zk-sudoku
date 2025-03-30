@@ -2,20 +2,34 @@
 
 /// 1차원 배열을 2차원 그리드로 변환
 pub fn convert_flat_to_grid(flat: &[u8]) -> Vec<Vec<Option<u8>>> {
+    // 입력 배열 길이 확인
+    if flat.len() != 81 {
+        web_sys::console::error_1(
+            &format!(
+                "Rust convert_flat_to_grid: 잘못된 길이: 예상 81, 실제 {}",
+                flat.len()
+            )
+            .into(),
+        );
+        // 잘못된 크기라도 기본 9x9 그리드 반환
+        return vec![vec![None; 9]; 9];
+    }
+
     let mut grid = vec![vec![None; 9]; 9];
-    
+
     for i in 0..9 {
         for j in 0..9 {
             let idx = i * 9 + j;
+            // 안전하게 인덱스 확인
             if idx < flat.len() {
                 let val = flat[idx];
-                if val >= 1 && val <= 9 {
+                if (1..=9).contains(&val) {
                     grid[i][j] = Some(val);
                 }
             }
         }
     }
-    
+
     grid
 }
 
@@ -26,7 +40,7 @@ pub fn is_valid_sudoku(grid: &Vec<Vec<Option<u8>>>, check_complete: bool) -> boo
         let mut seen = [false; 10]; // 1-9 표시용 (0번 인덱스는 사용 안함)
         for &cell in row {
             if let Some(val) = cell {
-                if val < 1 || val > 9 || seen[val as usize] {
+                if !(1..=9).contains(&val) || seen[val as usize] {
                     return false;
                 }
                 seen[val as usize] = true;
@@ -35,20 +49,20 @@ pub fn is_valid_sudoku(grid: &Vec<Vec<Option<u8>>>, check_complete: bool) -> boo
             }
         }
     }
-    
+
     // 열 검증
     for j in 0..9 {
         let mut seen = [false; 10];
         for i in 0..9 {
             if let Some(val) = grid[i][j] {
-                if val < 1 || val > 9 || seen[val as usize] {
+                if !(1..=9).contains(&val) || seen[val as usize] {
                     return false;
                 }
                 seen[val as usize] = true;
             }
         }
     }
-    
+
     // 3x3 서브그리드 검증
     for grid_i in 0..3 {
         for grid_j in 0..3 {
@@ -56,7 +70,7 @@ pub fn is_valid_sudoku(grid: &Vec<Vec<Option<u8>>>, check_complete: bool) -> boo
             for i in 0..3 {
                 for j in 0..3 {
                     if let Some(val) = grid[grid_i * 3 + i][grid_j * 3 + j] {
-                        if val < 1 || val > 9 || seen[val as usize] {
+                        if !(1..=9).contains(&val) || seen[val as usize] {
                             return false;
                         }
                         seen[val as usize] = true;
@@ -65,7 +79,7 @@ pub fn is_valid_sudoku(grid: &Vec<Vec<Option<u8>>>, check_complete: bool) -> boo
             }
         }
     }
-    
+
     true
 }
 
@@ -75,7 +89,7 @@ pub fn solve_backtrack(grid: &mut Vec<Vec<Option<u8>>>) -> bool {
     let mut row = 0;
     let mut col = 0;
     let mut found_empty = false;
-    
+
     'outer: for i in 0..9 {
         for j in 0..9 {
             if grid[i][j].is_none() {
@@ -86,28 +100,28 @@ pub fn solve_backtrack(grid: &mut Vec<Vec<Option<u8>>>) -> bool {
             }
         }
     }
-    
+
     // 빈 셀이 없으면 완료
     if !found_empty {
         return true;
     }
-    
+
     // 1~9 시도
     for num in 1..=9 {
         if is_safe(grid, row, col, num) {
             // 유효한 숫자면 배치
             grid[row][col] = Some(num);
-            
+
             // 재귀적으로 나머지 해결 시도
             if solve_backtrack(grid) {
                 return true;
             }
-            
+
             // 실패하면 셀 초기화
             grid[row][col] = None;
         }
     }
-    
+
     // 유효한 솔루션 없음
     false
 }
@@ -120,18 +134,18 @@ pub fn is_safe(grid: &Vec<Vec<Option<u8>>>, row: usize, col: usize, num: u8) -> 
             return false;
         }
     }
-    
+
     // 열 확인
     for i in 0..9 {
         if grid[i][col] == Some(num) {
             return false;
         }
     }
-    
+
     // 3x3 서브그리드 확인
     let start_row = (row / 3) * 3;
     let start_col = (col / 3) * 3;
-    
+
     for i in 0..3 {
         for j in 0..3 {
             if grid[start_row + i][start_col + j] == Some(num) {
@@ -139,6 +153,6 @@ pub fn is_safe(grid: &Vec<Vec<Option<u8>>>, row: usize, col: usize, num: u8) -> 
             }
         }
     }
-    
+
     true
 }
