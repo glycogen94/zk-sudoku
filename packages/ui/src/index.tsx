@@ -1,6 +1,84 @@
 import React from 'react';
 import { cn } from './lib/utils';
 
+// Typography 컴포넌트
+interface TypographyProps {
+  variant?: 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6' | 'body1' | 'body2' | 'caption';
+  children: React.ReactNode;
+  className?: string;
+}
+
+export const Typography: React.FC<TypographyProps> = ({
+  variant = 'body1',
+  children,
+  className,
+}) => {
+  const Component =
+    variant === 'h1' || variant === 'h2' || variant === 'h3' ||
+    variant === 'h4' || variant === 'h5' || variant === 'h6'
+      ? variant
+      : 'p';
+
+  return (
+    <Component
+      className={cn(
+        {
+          'text-4xl font-bold': variant === 'h1',
+          'text-3xl font-bold': variant === 'h2',
+          'text-2xl font-semibold': variant === 'h3',
+          'text-xl font-semibold': variant === 'h4',
+          'text-lg font-medium': variant === 'h5',
+          'text-base font-medium': variant === 'h6',
+          'text-base': variant === 'body1',
+          'text-sm': variant === 'body2',
+          'text-xs text-gray-500': variant === 'caption',
+        },
+        className
+      )}
+    >
+      {children}
+    </Component>
+  );
+};
+
+// Card 컴포넌트
+interface CardProps {
+  children: React.ReactNode;
+  className?: string;
+}
+
+export const Card: React.FC<CardProps> = ({ children, className }) => {
+  return (
+    <div
+      className={cn(
+        'bg-white rounded-lg border border-gray-200 shadow-sm',
+        className
+      )}
+    >
+      {children}
+    </div>
+  );
+};
+
+// Container 컴포넌트
+interface ContainerProps {
+  children: React.ReactNode;
+  className?: string;
+}
+
+export const Container: React.FC<ContainerProps> = ({ children, className }) => {
+  return (
+    <div
+      className={cn(
+        'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8',
+        className
+      )}
+    >
+      {children}
+    </div>
+  );
+};
+
 // 스도쿠 그리드 컴포넌트
 interface SudokuGridProps {
   grid: number[];

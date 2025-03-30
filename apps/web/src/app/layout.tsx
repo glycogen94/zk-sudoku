@@ -55,6 +55,11 @@ export default function RootLayout({
                           <Link href="/about">소개</Link>
                         </Button>
                       </li>
+                      <li>
+                        <Button variant="ghost" asChild className="text-sm sm:text-base">
+                          <Link href="/vibe">Vibe 코딩</Link>
+                        </Button>
+                      </li>
                     </ul>
                   </nav>
                 </div>

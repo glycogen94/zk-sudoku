@@ -20,5 +20,8 @@
   "packageManager": "yarn@1.22.19",
   "engines": {
     "node": ">=18.17.0"
+  },
+  "dependencies": {
+    "tailwind-merge": "^3.0.2"
   }
 }
