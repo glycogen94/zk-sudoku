@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useSudoku } from '@/lib/sudoku-service';
+import { useWasmContext } from '@/providers/wasm-provider';
 import SudokuGrid from './SudokuGrid';
 
 interface SudokuGameProps {
@@ -23,11 +24,15 @@ const SudokuGame: React.FC<SudokuGameProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [solved, setSolved] = useState<boolean>(false);
   
+  // WASM 컨텍스트
+  const { isLoaded: isWasmLoaded, isLoading: isWasmLoading, error: wasmError } = useWasmContext();
+  
   // 스도쿠 서비스 훅
   const { generate, solve, validate } = useSudoku();
   
   // 새 게임 시작
   const startNewGame = useCallback(async () => {
+    if (!isWasmLoaded) return; // WASM 로드 전에는 시작하지 않음
     setLoading(true);
     setError(null);
     setSolved(false);
@@ -49,8 +54,10 @@ const SudokuGame: React.FC<SudokuGameProps> = ({
   
   // 컴포넌트 마운트 시 새 게임 시작
   useEffect(() => {
-    startNewGame();
-  }, [startNewGame]);
+    if (isWasmLoaded) {
+      startNewGame();
+    }
+  }, [startNewGame, isWasmLoaded]);
   
   // 셀 값 변경 핸들러
   const handleCellChange = (index: number, value: number) => {
@@ -64,6 +71,7 @@ const SudokuGame: React.FC<SudokuGameProps> = ({
   
   // 완료 여부 확인
   const checkCompletion = async (grid: number[]) => {
+    if (!isWasmLoaded) return; // WASM 로드 전에는 실행하지 않음
     // 빈 셀이 있으면 완료되지 않음
     if (grid.includes(0)) return;
     
@@ -80,6 +88,7 @@ const SudokuGame: React.FC<SudokuGameProps> = ({
   
   // 힌트 보기
   const showHint = async () => {
+    if (!isWasmLoaded) return; // WASM 로드 전에는 실행하지 않음
     try {
       const solution = await solve(originalPuzzle);
       if (!solution) {
@@ -116,6 +125,7 @@ const SudokuGame: React.FC<SudokuGameProps> = ({
   
   // 솔루션 보기
   const showSolution = async () => {
+    if (!isWasmLoaded) return; // WASM 로드 전에는 실행하지 않음
     try {
       const solution = await solve(originalPuzzle);
       if (!solution) {
@@ -132,12 +142,27 @@ const SudokuGame: React.FC<SudokuGameProps> = ({
     }
   };
   
-  // 로딩 중 표시
+  // WASM 로딩 중 표시
+  if (isWasmLoading) {
+    return <div className="flex justify-center items-center h-60">WASM 모듈 준비 중...</div>;
+  }
+
+  // WASM 로드 오류 표시
+  if (wasmError) {
+    return (
+      <div className="text-center text-red-500">
+        <p>WASM 모듈 로드 실패: {wasmError.message}</p>
+        <p>페이지를 새로고침하거나 다시 시도해주세요.</p>
+      </div>
+    );
+  }
+  
+  // 스도쿠 퍼즐 로딩 중 표시
   if (loading) {
     return <div className="flex justify-center items-center h-60">로딩 중...</div>;
   }
   
-  // 오류 표시
+  // 스도쿠 퍼즐 생성 오류 표시
   if (error) {
     return (
       <div className="text-center">
