@@ -6,8 +6,7 @@ import { useCallback } from 'react';
 import { 
   solveSudoku as coreSolveSudoku, 
   generateSudoku as coreGenerateSudoku,
-  validateSudoku as coreValidateSudoku,
-  isWasmReady
+  validateSudoku as coreValidateSudoku
 } from '@zk-sudoku/core';
 
 // 스도쿠 솔루션 캐시
@@ -63,35 +62,32 @@ export async function solveSudoku(grid: number[]): Promise<number[] | null> {
   
   try {
     // Core 라이브러리 호출 시도
-    if (isWasmReady()) {
-      console.log('Core 라이브러리의 solveSudoku 호출');
-      const solution = await coreSolveSudoku(grid);
-      
-      // 솔루션이 있으면 캐시에 저장
-      if (solution) {
-        cache[gridKey] = solution;
-        saveCache(cache);
-      }
-      
-      return solution;
+    console.log('Core 라이브러리의 solveSudoku 호출');
+    const solution = await coreSolveSudoku(grid);
+    
+    // 솔루션이 있으면 캐시에 저장
+    if (solution) {
+      cache[gridKey] = solution;
+      saveCache(cache);
     }
+    
+    return solution;
   } catch (error) {
-    console.error('Core 라이브러리 solveSudoku 호출 오류:', error);
+    console.error('Core solveSudoku failed, attempting JS fallback...', error);
+    // JavaScript 구현으로 대체
+    console.log('JavaScript 솔버 사용');
+    const solution = solveSudokuJS(grid);
+    
+    // 솔루션이 있으면 캐시에 저장
+    if (solution) {
+      cache[gridKey] = solution;
+      saveCache(cache);
+    }
+    
+    return solution;
   }
-  
-  // JavaScript 구현으로 대체
-  console.log('JavaScript 솔버 사용');
-  const solution = solveSudokuJS(grid);
-  
-  // 솔루션이 있으면 캐시에 저장
-  if (solution) {
-    cache[gridKey] = solution;
-    saveCache(cache);
-  }
-  
-  return solution;
 }
-
+  
 /**
  * 난이도에 따라 스도쿠 퍼즐을 생성합니다.
  * 솔루션은 자동으로 캐시에 저장됩니다.
@@ -102,36 +98,33 @@ export async function solveSudoku(grid: number[]): Promise<number[] | null> {
 export async function generateSudoku(difficulty: number = 2): Promise<number[]> {
   try {
     // Core 라이브러리 호출 시도
-    if (isWasmReady()) {
-      console.log('Core 라이브러리의 generateSudoku 호출');
-      const puzzle = await coreGenerateSudoku(difficulty);
-      
-      // 생성 후 솔루션 계산 및 캐시 저장
-      const solution = await solveSudoku([...puzzle]);
-      if (solution) {
-        const cache = getCache();
-        cache[puzzle.join('')] = solution;
-        saveCache(cache);
-      }
-      
-      return puzzle;
+    console.log('Core 라이브러리의 generateSudoku 호출');
+    const puzzle = await coreGenerateSudoku(difficulty);
+    
+    // 생성 후 솔루션 계산 및 캐시 저장
+    const solution = await solveSudoku([...puzzle]); // This will also try WASM first
+    if (solution) {
+      const cache = getCache();
+      cache[puzzle.join('')] = solution;
+      saveCache(cache);
     }
+    
+    return puzzle;
   } catch (error) {
-    console.error('Core 라이브러리 generateSudoku 호출 오류:', error);
+    console.error('Core generateSudoku failed, attempting JS fallback...', error);
+    // JavaScript 구현으로 대체
+    console.log('JavaScript 구현으로 스도쿠 생성');
+    const { puzzle, solution } = generateSudokuWithSolution(difficulty);
+    
+    // 솔루션 캐시에 저장
+    const cache = getCache();
+    cache[puzzle.join('')] = solution;
+    saveCache(cache);
+    
+    return puzzle;
   }
-  
-  // JavaScript 구현으로 대체
-  console.log('JavaScript 구현으로 스도쿠 생성');
-  const { puzzle, solution } = generateSudokuWithSolution(difficulty);
-  
-  // 솔루션 캐시에 저장
-  const cache = getCache();
-  cache[puzzle.join('')] = solution;
-  saveCache(cache);
-  
-  return puzzle;
 }
-
+  
 /**
  * 스도쿠 퍼즐 또는 솔루션의 유효성을 검사합니다.
  * 
@@ -146,17 +139,14 @@ export async function validateSudoku(grid: number[], checkComplete: boolean = fa
   
   try {
     // Core 라이브러리 호출 시도
-    if (isWasmReady()) {
-      console.log('Core 라이브러리의 validateSudoku 호출');
-      return await coreValidateSudoku(grid, checkComplete);
-    }
+    console.log('Core 라이브러리의 validateSudoku 호출');
+    return await coreValidateSudoku(grid, checkComplete);
   } catch (error) {
-    console.error('Core 라이브러리 validateSudoku 호출 오류:', error);
+    console.error('Core validateSudoku failed, attempting JS fallback...', error);
+    // JavaScript 구현으로 대체
+    console.log('JavaScript 구현으로 유효성 검사');
+    return validateSudokuJS(grid, checkComplete);
   }
-  
-  // JavaScript 구현으로 대체
-  console.log('JavaScript 구현으로 유효성 검사');
-  return validateSudokuJS(grid, checkComplete);
 }
 
 /**
